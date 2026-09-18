@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fogón — Academia de cocina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#211814;
+    --bg-deep:#150F0C;
+    --flame:#E2572B;
+    --flame-soft:rgba(226,87,43,0.35);
+    --herb:#8A9A5B;
+    --cream:#F1E7D6;
+    --muted:#A6957F;
+    --card-bg:rgba(38,29,24,0.55);
+    --card-border:rgba(241,231,214,0.10);
+    --ok:#8A9A5B;
+    --warn:#D8A24A;
+    --danger:#C1440E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0; min-height:100vh;
+    font-family:'Work Sans', system-ui, sans-serif;
+    color:var(--cream);
+    background: radial-gradient(circle at 12% 0%, #33241c 0%, var(--bg-deep) 55%, #0d0908 100%);
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4{ font-family:'Fraunces', serif; margin:0; font-weight:600; }
+
+  .pantalla{ display:none; }
+  .pantalla.activa-flex{ display:flex; animation:fadeIn .5s ease; }
+  .pantalla.activa-block{ display:block; animation:fadeIn .5s ease; }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+  .glass{
+    background:var(--card-bg);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+
+  /* ---------- AUTH ---------- */
+  #login-screen,#register-screen,#recovery-screen{
+    flex-direction:column; align-items:center; justify-content:center; height:100vh; position:relative; padding:20px;
+  }
+  .decor-flame{ position:absolute; border-radius:50%; filter:blur(90px); z-index:-1; }
+  .flame-1{ width:320px; height:320px; background:var(--flame); top:8%; left:15%; opacity:.18; }
+  .flame-2{ width:380px; height:380px; background:var(--herb); bottom:8%; right:10%; opacity:.12; }
+
+  .auth-box{ width:100%; max-width:380px; padding:38px; text-align:left; }
+  .brand-row{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .brand-row h1{ font-size:26px; letter-spacing:.3px; color:var(--cream); }
+  .brand-row h1 em{ color:var(--flame); font-style:italic; }
+  .tagline{ color:var(--muted); font-size:14px; margin-bottom:28px; }
+
+  .auth-box input{
+    width:100%; padding:13px 14px; margin:8px 0;
+    background:rgba(0,0,0,.28); border:1px solid var(--card-border);
+    border-radius:9px; color:var(--cream); font-family:'Work Sans',sans-serif; font-size:14px;
+    transition:.25s;
+  }
+  .auth-box input:focus{ outline:none; border-color:var(--flame); box-shadow:0 0 0 3px var(--flame-soft); }
+  .password-container{ position:relative; }
+  .toggle-password{ position:absolute; right:13px; top:50%; transform:translateY(-50%); cursor:pointer; opacity:.7; user-select:none; }
+  .btn-primary{
+    width:100%; padding:13px; margin-top:16px; border:none; border-radius:9px;
+    background:var(--flame); color:#1a0e08; font-weight:700; font-size:15px; cursor:pointer;
+    font-family:'Work Sans',sans-serif; transition:.25s; box-shadow:0 6px 18px var(--flame-soft);
+  }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 10px 22px var(--flame-soft); }
+  .btn-ghost{ background:transparent; color:var(--cream); border:1px solid var(--card-border); box-shadow:none; }
+  .auth-link{ margin-top:18px; font-size:13px; color:var(--muted); }
+  .auth-link a{ color:var(--flame); font-weight:600; text-decoration:none; cursor:pointer; }
+  .error-msg,.success-msg{ font-size:12.5px; display:none; margin-top:2px; font-weight:600; }
+  .error-msg{ color:#e07a5f; }
+  .success-msg{ color:var(--herb); }
+
+  /* ---------- NAV ---------- */
+  header{ display:flex; justify-content:space-between; align-items:center; padding:14px 32px; border-bottom:1px solid var(--card-border); position:sticky; top:0; z-index:100; background:rgba(21,15,12,.75); backdrop-filter:blur(10px);}
+  .header-left{ display:flex; align-items:center; gap:16px; }
+  .menu-btn{ font-size:22px; cursor:pointer; background:none; border:none; color:var(--cream); }
+  .header-logo{ display:flex; align-items:center; gap:9px; }
+  .header-logo span{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:.3px; font-size:17px; }
+  .user-info{ display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; color:var(--muted); gap:2px;}
+  .profile-pic{ width:38px; height:38px; background:var(--flame); color:#1a0e08; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; }
+  .logout-btn{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:11.5px; text-decoration:underline; }
+  .logout-btn:hover{ color:var(--flame); }
+
+  /* ---------- TICKER ---------- */
+  .ticker-wrap{ width:100%; border-bottom:1px solid var(--card-border); background:rgba(0,0,0,.25); overflow:hidden; height:42px; display:flex; align-items:center; }
+  .ticker-track{ display:flex; gap:28px; white-space:nowrap; animation:scrollTicker 38s linear infinite; padding-left:24px; }
+  .ticker-wrap:hover .ticker-track{ animation-play-state:paused; }
+  .ticker-item{ font-size:13px; color:var(--muted); display:flex; align-items:center; gap:7px; }
+  .ticker-item b{ color:var(--cream); font-weight:600; }
+  @keyframes scrollTicker{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+  /* ---------- LAYOUT ---------- */
+  .layout{ display:flex; min-height:calc(100vh - 110px); }
+  #sidebar{ width:250px; min-width:250px; border-right:1px solid var(--card-border); padding:24px 18px; margin-left:-290px; opacity:0; visibility:hidden; transition:.35s cubic-bezier(.25,.8,.25,1); }
+  #sidebar.abierto{ margin-left:0; opacity:1; visibility:visible; }
+  .sidebar-info{ margin-bottom:22px; padding-bottom:14px; border-bottom:1px solid var(--card-border); }
+  .sidebar-info strong{ font-family:'Fraunces',serif; font-size:17px; }
+  .sidebar-section-title{ font-size:11.5px; color:var(--flame); letter-spacing:.4px; margin:22px 0 8px; font-weight:700; }
+  #sidebar a{ display:block; color:var(--muted); text-decoration:none; padding:10px 12px; border-radius:8px; margin-bottom:3px; font-size:13.5px; cursor:pointer; transition:.2s; }
+  #sidebar a:hover{ background:rgba(241,231,214,.06); color:var(--cream); border-left:2px solid var(--flame); padding-left:10px; }
+
+  .content{ flex-grow:1; padding:28px 36px 50px; display:flex; flex-direction:column; align-items:center; max-width:1180px; margin:0 auto; width:100%; }
+
+  .top-widgets{ display:flex; width:100%; gap:18px; margin-bottom:26px; flex-wrap:wrap; }
+  .widget{ flex:1; min-width:290px; padding:22px; border-top:3px solid var(--flame); }
+  .widget-title{ font-size:13px; color:var(--muted); margin-bottom:16px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .seasonal-name{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; margin:4px 0 6px; }
+  .seasonal-meta{ font-size:12.5px; color:var(--herb); font-weight:600; margin-bottom:10px; }
+  .seasonal-tip{ font-size:13.5px; color:var(--cream); line-height:1.5; }
+
+  .sub-list{ display:flex; flex-direction:column; gap:10px; }
+  .sub-item{ display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:9px 0; border-bottom:1px solid var(--card-border); }
+  .sub-item:last-child{ border-bottom:none; }
+  .sub-item .no-tienes{ color:var(--muted); }
+  .sub-item .usa{ color:var(--cream); font-weight:600; text-align:right; }
+
+  .modules-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; width:100%; margin-bottom:26px; }
+  .module-card{ padding:26px 20px; cursor:pointer; transition:.3s; display:flex; flex-direction:column; gap:10px; }
+  .module-card:hover{ transform:translateY(-4px); border-color:var(--flame); background:rgba(226,87,43,.08); }
+  .module-icon{ font-size:26px; }
+  .module-card h4{ font-size:15.5px; font-weight:600; }
+  .module-card p{ font-size:12.5px; color:var(--muted); margin:0; line-height:1.4; }
+
+  .dynamic-list{ width:100%; display:flex; flex-direction:column; gap:14px; }
+  .dynamic-item{ padding:22px; cursor:pointer; transition:.25s; display:flex; justify-content:space-between; align-items:center; border-left:3px solid transparent; }
+  .dynamic-item:hover{ background:rgba(241,231,214,.04); border-left-color:var(--flame); }
+  .dynamic-content h4{ margin:0 0 6px; color:var(--flame); font-size:15px; }
+  .dynamic-content p{ margin:0; font-size:13.5px; color:var(--cream); line-height:1.5; }
+  .dynamic-arrow{ color:var(--muted); font-size:22px; }
+
+  /* ---------- MODALS ---------- */
+  .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(10,6,4,.78); z-index:1000; justify-content:center; align-items:center; backdrop-filter:blur(6px); padding:16px;}
+  .modal-content{ background:#1c140f; border:1px solid var(--card-border); padding:34px; border-radius:16px; width:100%; max-width:540px; max-height:85vh; overflow-y:auto; position:relative; border-top:3px solid var(--flame); }
+  .close-btn{ position:absolute; top:16px; right:20px; font-size:26px; cursor:pointer; color:var(--muted); line-height:1; }
+  .close-btn:hover{ color:var(--danger); }
+  .modal-content h2{ font-size:21px; border-bottom:1px solid var(--card-border); padding-bottom:14px; margin-bottom:16px; }
+  .step-box{ background:rgba(0,0,0,.22); padding:16px 18px; border-radius:10px; margin-bottom:16px; border-left:3px solid var(--flame); }
+  .step-box h3{ font-size:14.5px; margin-bottom:10px; font-family:'Work Sans',sans-serif; font-weight:700; }
+  .step-box ul{ margin:0; padding-left:18px; color:var(--muted); line-height:1.65; font-size:13.5px; }
+  .step-box li b{ color:var(--cream); }
+  .input-group{ margin-bottom:16px; }
+  .input-group label{ display:block; margin-bottom:6px; color:var(--muted); font-size:12.5px; }
+  .input-interactivo{ width:100%; padding:12px; background:rgba(0,0,0,.28); border:1px solid var(--card-border); border-radius:8px; color:var(--cream); font-size:14px; font-family:'Work Sans',sans-serif; }
+  .input-interactivo:focus{ outline:none; border-color:var(--flame); }
+  .resultado-box{ margin-top:20px; padding:18px; background:rgba(138,154,91,.10); border-radius:10px; border:1px solid rgba(138,154,91,.25); display:none; }
+  .resultado-box.activo{ display:block; animation:fadeIn .35s ease; }
+  .btn-mitad{ width:48%; }
+
+  ::-webkit-scrollbar{ width:7px; }
+  ::-webkit-scrollbar-track{ background:var(--bg-deep); }
+  ::-webkit-scrollbar-thumb{ background:rgba(241,231,214,.18); border-radius:8px; }
+</style>
+</head>
+<body>
+
+<div class="decor-flame flame-1"></div>
+<div class="decor-flame flame-2"></div>
+
+<div id="login-screen" class="pantalla activa-flex">
+  <div class="auth-box glass">
+    <div class="brand-row">
+      <span style="font-size:26px;">🔥</span>
+      <h1>Fog<em>ó</em>n</h1>
+    </div>
+    <p class="tagline">Tu cocina, organizada.</p>
+    <form id="formulario-login">
+      <input type="email" id="login-email" placeholder="Correo electrónico" required>
+      <div class="password-container">
+        <input type="password" id="login-password" placeholder="Contraseña" required>
+        <span class="toggle-password" onclick="toggleVisibilidad('login-password', this)">👁️</span>
+      </div>
+      <div id="login-error" class="error-msg">Correo o contraseña incorrectos.</div>
+      <button type="submit" class="btn-primary">Entrar a mi cocina</button>
+    </form>
+    <div class="auth-link">
+      <a onclick="cambiarPantalla('recovery-screen')">Olvidé mi contraseña</a><br><br>
+      <span>¿Primera vez aquí?</span> <a onclick="cambiarPantalla('register-screen')">Crea tu cuenta</a>
+    </div>
+  </div>
+</div>
+
+<div id="register-screen" class="pantalla">
+  <div class="auth-box glass">
+    <h2 style="font-size:20px; margin-bottom:6px;">Crea tu cuenta</h2>
+    <p class="tagline" style="margin-bottom:20px;">Guarda tus recetas y herramientas en un solo lugar.</p>
+    <form id="formulario-registro">
+      <input type="text" id="reg-nombre" placeholder="Nombre(s)" required>
+      <input type="text" id="reg-apellido" placeholder="Apellidos" required>
+      <input type="email" id="reg-email" placeholder="Correo electrónico" required>
+      <div class="password-container">
+        <input type="password" id="reg-password" placeholder="Contraseña" required>
+        <span class="toggle-password" onclick="toggleVisibilidad('reg-password', this)">👁️</span>
+      </div>
+      <div id="reg-error" class="error-msg">Ese correo ya tiene una cuenta.</div>
+      <button type="submit" class="btn-primary">Crear cuenta</button>
+    </form>
+    <div class="auth-link">¿Ya tienes cuenta? <a onclick="cambiarPantalla('login-screen')">Inicia sesión</a></div>
+  </div>
+</div>
+
+<div id="recovery-screen" class="pantalla">
+  <div class="auth-box glass">
+    <h2 style="font-size:20px; margin-bottom:6px;">Recuperar acceso</h2>
+    <p class="tagline" style="margin-bottom:20px;">Ingresa tu correo y define una nueva contraseña.</p>
+    <form id="formulario-recuperacion">
+      <input type="email" id="rec-email" placeholder="Correo electrónico" required>
+      <input type="password" id="rec-new-password" placeholder="Nueva contraseña" required>
+      <div id="rec-error" class="error-msg">No encontramos una cuenta con ese correo.</div>
+      <div id="rec-success" class="success-msg">Contraseña actualizada.</div>
+      <button type="submit" class="btn-primary">Restablecer contraseña</button>
+    </form>
+    <div class="auth-link"><a onclick="cambiarPantalla('login-screen')">Volver a iniciar sesión</a></div>
+  </div>
+</div>
+
+<div id="main-screen" class="pantalla">
+  <header class="glass" style="border-radius:0; box-shadow:none;">
+    <div class="header-left">
+      <button class="menu-btn" onclick="toggleMenu()">☰</button>
+      <div class="header-logo">
+        <span style="font-size:20px;">🔥</span>
+        <span>Fogón</span>
+      </div>
+    </div>
+    <div class="user-info">
+      <div class="profile-pic" id="avatar-inicial">👤</div>
+      <span id="display-date">Fecha</span>
+      <button class="logout-btn" onclick="confirmarCerrarSesion()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+
+  <div class="layout">
+    <nav id="sidebar" class="glass" style="border-radius:0; border-top:none; border-bottom:none; border-left:none;">
+      <div class="sidebar-info">
+        <strong id="sidebar-nombre-usuario">Cocinero/a</strong><br>
+        <span style="font-size:12px; color:var(--herb);">● En la cocina</span>
+      </div>
+
+      <div class="sidebar-section-title">Academia</div>
+      <a onclick="moduloTecnicas()">Técnicas base</a>
+      <a onclick="moduloDespensa()">Organización de despensa</a>
+      <a onclick="moduloSabor()">Estrategias de sabor</a>
+
+      <div class="sidebar-section-title">Herramientas</div>
+      <a onclick="abrirModalPlaneador()">Planeador de comidas</a>
+      <a onclick="abrirModalPorciones()">Calculadora de porciones</a>
+
+      <div class="sidebar-section-title">Enlaces de interés</div>
+      <a href="https://www.kiwilimon.com/" target="_blank">↗ Kiwilimón</a>
+      <a href="https://laroussecocina.mx/" target="_blank">↗ Larousse Cocina</a>
+    </nav>
+
+    <main class="content">
+      <div class="top-widgets">
+        <div class="widget glass">
+          <div class="widget-title"><span>Ingrediente de temporada</span></div>
+          <div id="seasonal-box"></div>
+        </div>
+
+        <div class="widget glass">
+          <div class="widget-title"><span>Sustituciones útiles</span></div>
+          <div class="sub-list">
+            <div class="sub-item"><span class="no-tienes">No tienes crema</span><span class="usa">→ yogurt natural</span></div>
+            <div class="sub-item"><span class="no-tienes">No tienes vino blanco</span><span class="usa">→ caldo + limón</span></div>
+            <div class="sub-item"><span class="no-tienes">No tienes mantequilla</span><span class="usa">→ aceite + una pizca de sal</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modules-grid">
+        <div class="module-card glass" onclick="moduloTecnicas()">
+          <div class="module-icon">🔪</div>
+          <h4>Técnicas base</h4>
+          <p>Cortes, cocciones y la mise en place que sostiene todo lo demás.</p>
+        </div>
+        <div class="module-card glass" onclick="abrirModalPlaneador()">
+          <div class="module-icon">🧺</div>
+          <h4>Planeador de comidas</h4>
+          <p>Reparte tu presupuesto de la semana entre proteína, verduras y despensa.</p>
+        </div>
+        <div class="module-card glass" onclick="abrirModalPorciones()">
+          <div class="module-icon">⚖️</div>
+          <h4>Calculadora de porciones</h4>
+          <p>Ajusta cualquier receta para más o menos comensales sin arruinarla.</p>
+        </div>
+        <div class="module-card glass" onclick="abrirModalDiagnostico()">
+          <div class="module-icon">🍳</div>
+          <h4>Mi nivel en la cocina</h4>
+          <p>Una autoevaluación rápida para saber por dónde seguir aprendiendo.</p>
+        </div>
+      </div>
+
+      <div class="dynamic-list">
+        <div class="dynamic-item glass" onclick="mostrarTipCompleto()">
+          <div class="dynamic-content">
+            <h4>Tip del día</h4>
+            <p id="texto-tip-dia">Cargando...</p>
+          </div>
+          <div class="dynamic-arrow">›</div>
+        </div>
+
+        <div class="dynamic-item glass" onclick="mostrarTecnicaCompleta()">
+          <div class="dynamic-content">
+            <h4>Técnica del día</h4>
+            <p id="texto-tecnica-dia">Cargando...</p>
+          </div>
+          <div class="dynamic-arrow">›</div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="miModal" class="modal-overlay" onclick="cerrarModalFondo(event)">
+  <div class="modal-content">
+    <span class="close-btn" onclick="cerrarModal()">&times;</span>
+    <h2 id="modal-titulo"></h2>
+    <div id="modal-texto"></div>
+  </div>
+</div>
+
+<script>
+const diaSemana = new Date().getDay();
+
+function toggleVisibilidad(inputId, icon){
+  const input = document.getElementById(inputId);
+  if(input.type === "password"){ input.type = "text"; icon.innerText = "🙈"; }
+  else{ input.type = "password"; icon.innerText = "👁️"; }
+}
+
+const tipsDiarios = [
+  "Domingo de prep: corta y guarda verduras para dos o tres días, así entre semana solo cocinas.",
+  "Lunes de sal: agrega sal en capas durante la cocción, no solo al final. Cada capa se nota distinto.",
+  "Martes de fondo: guarda huesos y verduras feas para un caldo casero. Congélalo en porciones.",
+  "Miércoles de acidez: un chorrito de limón o vinagre al final despierta cualquier platillo que sienta plano.",
+  "Jueves de sartén: no muevas la carne hasta que suelte fácil del sartén, ahí ya se doró bien.",
+  "Viernes de sobras: convierte las sobras en algo nuevo (arroz frito, tacos, sopa) en vez de recalentarlas igual.",
+  "Sábado de mercado: compra lo que se ve fresco ese día y arma el menú de la semana alrededor de eso."
+];
+
+const tecnicasDiario = [
+  { termino: "Mise en place", definicion: "Tener todos los ingredientes pesados, cortados y listos antes de encender la estufa. Evita el caos a media cocción." },
+  { termino: "Sofrito", definicion: "Cocinar cebolla, ajo y a veces jitomate a fuego lento en grasa, hasta formar la base de sabor de guisos y salsas." },
+  { termino: "Deglasear", definicion: "Añadir líquido (vino, caldo, agua) a un sartén caliente para despegar los trocitos dorados del fondo y usarlos en la salsa." },
+  { termino: "Blanquear", definicion: "Hervir un alimento brevemente y pasarlo a agua con hielo. Fija el color y detiene la cocción de golpe." },
+  { termino: "Reducir", definicion: "Cocinar un líquido a fuego medio para evaporar agua y concentrar sabor y espesor, típico en salsas y caldos." },
+  { termino: "Emulsionar", definicion: "Mezclar dos líquidos que normalmente se separan (aceite y agua) hasta integrarlos, como en una vinagreta bien batida." },
+  { termino: "Desglasar en seco", definicion: "Raspar el fondo de un sartén sin líquido para que las partículas doradas se integren directo a la comida." }
+];
+
+const ingredientesDia = [
+  { nombre: "Calabaza de Castilla", temporada: "Otoño - invierno", tip: "Ásala en trozos con un poco de piloncillo para tacos dulces o para relleno de empanadas." },
+  { nombre: "Elote", temporada: "Verano", tip: "Cocido y luego pasado por el sartén con mantequilla y chile en polvo, se transforma por completo." },
+  { nombre: "Nopal", temporada: "Todo el año", tip: "Ásalo entero antes de cortarlo, así suelta menos baba y queda con mejor textura." },
+  { nombre: "Jitomate saladet", temporada: "Primavera - verano", tip: "Para salsas cocidas, ásalo directo en comal hasta que la piel se ampolle." },
+  { nombre: "Chayote", temporada: "Todo el año", tip: "Sustituye a la papa en guisos ligeros, absorbe muy bien el sabor del caldo." },
+  { nombre: "Guayaba", temporada: "Otoño - invierno", tip: "Combínala con chile piquín y limón para un snack rápido lleno de sabor." },
+  { nombre: "Flor de calabaza", temporada: "Verano - otoño", tip: "Añádela al final de la cocción, unos minutos bastan para que no se marchite de más." }
+];
+
+function cambiarPantalla(id){
+  document.querySelectorAll('.pantalla').forEach(el=>{ el.classList.remove('activa-flex'); el.classList.remove('activa-block'); });
+  const nueva = document.getElementById(id);
+  document.querySelectorAll('.error-msg,.success-msg').forEach(el=> el.style.display='none');
+  id === 'main-screen' ? nueva.classList.add('activa-block') : nueva.classList.add('activa-flex');
+}
+
+document.getElementById('formulario-registro').addEventListener('submit', function(e){
+  e.preventDefault();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  try{
+    if(localStorage.getItem('fogon_'+email)){ document.getElementById('reg-error').style.display='block'; return; }
+    const data = {
+      nombre: document.getElementById('reg-nombre').value.trim(),
+      apellido: document.getElementById('reg-apellido').value.trim(),
+      password: document.getElementById('reg-password').value
+    };
+    localStorage.setItem('fogon_'+email, JSON.stringify(data));
+  }catch(err){ console.error('No se pudo guardar localmente:', err); }
+  alert('Cuenta creada. ¡Bienvenido a tu cocina!');
+  document.getElementById('formulario-registro').reset();
+  cambiarPantalla('login-screen');
+});
+
+document.getElementById('formulario-login').addEventListener('submit', function(e){
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  let usuario = null;
+  try{ usuario = JSON.parse(localStorage.getItem('fogon_'+email)); }catch(err){ usuario = null; }
+
+  if(usuario && usuario.password === password){
+    document.getElementById('login-error').style.display='none';
+    iniciarDashboard(usuario.nombre, usuario.apellido);
+    cambiarPantalla('main-screen');
+    document.getElementById('formulario-login').reset();
+  } else { document.getElementById('login-error').style.display='block'; }
+});
+
+document.getElementById('formulario-recuperacion').addEventListener('submit', function(e){
+  e.preventDefault();
+  const email = document.getElementById('rec-email').value.trim().toLowerCase();
+  const nuevaPassword = document.getElementById('rec-new-password').value;
+  let usuarioData = null;
+  try{ usuarioData = localStorage.getItem('fogon_'+email); }catch(err){ usuarioData = null; }
+
+  if(usuarioData){
+    const usuario = JSON.parse(usuarioData);
+    usuario.password = nuevaPassword;
+    try{ localStorage.setItem('fogon_'+email, JSON.stringify(usuario)); }catch(err){}
+    document.getElementById('rec-error').style.display='none';
+    document.getElementById('rec-success').style.display='block';
+    setTimeout(()=>{ document.getElementById('formulario-recuperacion').reset(); document.getElementById('rec-success').style.display='none'; cambiarPantalla('login-screen'); }, 1800);
+  } else {
+    document.getElementById('rec-error').style.display='block';
+    document.getElementById('rec-success').style.display='none';
+  }
+});
+
+function confirmarCerrarSesion(){
+  const html = `<div style="text-align:center;"><p style="font-size:15px; color:var(--muted); margin-bottom:22px;">¿Cerrar tu sesión y salir de la cocina?</p><div style="display:flex; justify-content:space-between; gap:12px;"><button class="btn-primary btn-mitad btn-ghost" onclick="cerrarModal()">Cancelar</button><button class="btn-primary btn-mitad" style="background:var(--danger); color:white;" onclick="ejecutarCierreSesion()">Sí, salir</button></div></div>`;
+  abrirModal("Cerrar sesión", html);
+}
+function ejecutarCierreSesion(){ cerrarModal(); document.getElementById('sidebar').classList.remove('abierto'); cambiarPantalla('login-screen'); }
+
+function iniciarDashboard(nombre, apellido){
+  document.getElementById('sidebar-nombre-usuario').innerText = `${nombre} ${apellido}`;
+  document.getElementById('avatar-inicial').innerText = nombre.charAt(0).toUpperCase();
+  const opciones = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  const fechaString = new Date().toLocaleDateString('es-MX', opciones);
+  document.getElementById('display-date').innerText = fechaString.charAt(0).toUpperCase() + fechaString.slice(1);
+
+  document.getElementById('texto-tip-dia').innerText = tipsDiarios[diaSemana];
+  const tec = tecnicasDiario[diaSemana];
+  document.getElementById('texto-tecnica-dia').innerHTML = `<b style="color:var(--flame);">${tec.termino}:</b> <span style="color:var(--muted);">${tec.definicion.substring(0,60)}...</span>`;
+
+  const ing = ingredientesDia[diaSemana];
+  document.getElementById('seasonal-box').innerHTML = `<div class="seasonal-name">${ing.nombre}</div><div class="seasonal-meta">Temporada: ${ing.temporada}</div><div class="seasonal-tip">${ing.tip}</div>`;
+
+  construirTicker();
+  setTimeout(()=>{ document.getElementById('sidebar').classList.add('abierto'); }, 300);
+}
+
+function construirTicker(){
+  const frases = [
+    "🌶️ De temporada: chile poblano", "🧄 Truco: machaca el ajo con sal para que rinda más sabor",
+    "🍅 Tip: asa el jitomate con todo y piel para salsas más profundas", "🧂 Regla: sazona por capas, no solo al final",
+    "🥑 De temporada: aguacate hass", "🔥 Truco: precalienta bien el sartén antes de sellar carne",
+    "🍋 Tip: la ralladura de limón tiene más aroma que el jugo"
+  ];
+  const track = document.getElementById('ticker-track');
+  const contenido = frases.concat(frases).map(f => `<span class="ticker-item">${f}</span>`).join('');
+  track.innerHTML = contenido;
+}
+
+function toggleMenu(){ document.getElementById('sidebar').classList.toggle('abierto'); }
+
+const modal = document.getElementById('miModal');
+function abrirModal(titulo, htmlStr){ document.getElementById('modal-titulo').innerText = titulo; document.getElementById('modal-texto').innerHTML = htmlStr; modal.style.display='flex'; }
+function cerrarModal(){ modal.style.display='none'; }
+function cerrarModalFondo(e){ if(e.target === modal) cerrarModal(); }
+
+function moduloTecnicas(){
+  abrirModal("Técnicas base", `<div style="text-align:left;"><p style="color:var(--muted); font-size:14.5px;">Casi todo platillo se apoya en un puñado de técnicas. Dominarlas importa más que memorizar recetas.</p><div class="step-box"><h3>Lo esencial</h3><ul><li><b>Mise en place:</b> todo pesado y cortado antes de prender la estufa.</li><li><b>Cortes parejos:</b> un corte disparejo cocina disparejo.</li><li><b>Calor correcto:</b> fuego alto para dorar, fuego bajo para desarrollar sabor lento.</li></ul></div></div>`);
+}
+function moduloDespensa(){
+  abrirModal("Organización de despensa", `<div style="text-align:left;"><p style="color:var(--muted); font-size:14.5px;">Una despensa ordenada te ahorra dinero: sabes qué tienes y compras solo lo que falta.</p><div class="step-box"><h3>Reglas simples</h3><ul><li>Primero entra, primero sale: lo nuevo va atrás.</li><li>Agrupa por tipo (granos, enlatados, especias), no por marca.</li><li>Revisa la despensa antes de hacer la lista del súper.</li></ul></div></div>`);
+}
+function moduloSabor(){
+  abrirModal("Estrategias de sabor", `<div style="text-align:left;"><p style="color:var(--muted); font-size:14.5px;">Un platillo "soso" casi siempre le falta uno de estos elementos, no necesariamente más sal.</p><div class="step-box"><h3>Los ejes del sabor</h3><ul><li><b>Ácido:</b> limón, vinagre — despierta sabores planos.</li><li><b>Umami:</b> caldo, soya, queso añejo — da profundidad.</li><li><b>Textura:</b> algo crujiente sobre algo suave siempre mejora el bocado.</li></ul></div></div>`);
+}
+
+function abrirModalPlaneador(){
+  abrirModal("Planeador de comidas", `<div class="input-group"><label>Presupuesto semanal para comida (MXN)</label><input type="number" id="inputPresupuesto" class="input-interactivo" placeholder="Ej. 600"></div><div class="input-group"><label>Personas a las que cocinas</label><input type="number" id="inputPersonas" class="input-interactivo" placeholder="Ej. 2"></div><button class="btn-primary" onclick="calcularPlaneador()">Repartir presupuesto</button><div id="box-resultado-plan" class="resultado-box"></div>`);
+}
+function calcularPlaneador(){
+  const presupuesto = parseFloat(document.getElementById('inputPresupuesto').value);
+  const personas = parseFloat(document.getElementById('inputPersonas').value) || 1;
+  const box = document.getElementById('box-resultado-plan');
+  if(presupuesto > 0){
+    const proteina = presupuesto*0.45, verduras = presupuesto*0.35, despensa = presupuesto*0.20;
+    const porPersona = presupuesto/personas;
+    box.innerHTML = `<p style="margin:0 0 14px; font-weight:600;">Reparto sugerido para la semana:</p>
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:8px;"><span style="color:var(--muted);">🥩 Proteína (45%)</span><b>$${proteina.toFixed(2)}</b></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:8px;"><span style="color:var(--muted);">🥦 Verduras y granos (35%)</span><b>$${verduras.toFixed(2)}</b></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:14px;"><span style="color:var(--muted);">🧂 Despensa y condimentos (20%)</span><b>$${despensa.toFixed(2)}</b></div>
+      <div style="display:flex; justify-content:space-between; font-size:16px;"><span style="color:var(--flame); font-weight:700;">Costo por persona / semana</span><b style="color:var(--ok);">$${porPersona.toFixed(2)}</b></div>`;
+    box.classList.add('activo');
+  } else { alert("Ingresa un presupuesto válido mayor a 0."); }
+}
+
+function abrirModalPorciones(){
+  abrirModal("Calculadora de porciones", `<p style="color:var(--muted); font-size:13.5px;">Escala cualquier ingrediente de una receta a otro número de comensales.</p><div class="input-group"><label>Porciones originales de la receta</label><input type="number" id="porOriginal" class="input-interactivo" placeholder="Ej. 4"></div><div class="input-group"><label>Cantidad del ingrediente (en la unidad que quieras)</label><input type="number" id="porCantidad" class="input-interactivo" placeholder="Ej. 300"></div><div class="input-group"><label>Porciones que necesitas</label><input type="number" id="porDeseado" class="input-interactivo" placeholder="Ej. 6"></div><button class="btn-primary" onclick="calcularPorciones()">Escalar receta</button><div id="box-resultado-por" class="resultado-box"></div>`);
+}
+function calcularPorciones(){
+  const original = parseFloat(document.getElementById('porOriginal').value);
+  const cantidad = parseFloat(document.getElementById('porCantidad').value);
+  const deseado = parseFloat(document.getElementById('porDeseado').value);
+  const box = document.getElementById('box-resultado-por');
+  if(original > 0 && cantidad > 0 && deseado > 0){
+    const factor = deseado/original;
+    const resultado = cantidad*factor;
+    box.innerHTML = `<p style="color:var(--muted); margin-bottom:6px;">Factor de escala: <b style="color:var(--cream);">×${factor.toFixed(2)}</b></p><p style="font-size:30px; color:var(--ok); font-weight:800; margin:8px 0;">${resultado.toFixed(1)}</p><p style="color:var(--muted); font-size:13px; margin:0;">de esta cantidad, para ${deseado} porciones.</p>`;
+    box.classList.add('activo');
+  } else { alert("Ingresa valores numéricos válidos en los tres campos."); }
+}
+
+function abrirModalDiagnostico(){
+  abrirModal("Mi nivel en la cocina", `<div class="input-group"><label>Confianza cocinando sin receta, del 1 al 10</label><input type="number" id="diagScore" class="input-interactivo" min="1" max="10" placeholder="Ej. 5"></div><button class="btn-primary" onclick="evaluarDiagnostico()">Ver diagnóstico</button><div id="box-resultado-diag" class="resultado-box"></div>`);
+}
+function evaluarDiagnostico(){
+  const score = parseInt(document.getElementById('diagScore').value);
+  const box = document.getElementById('box-resultado-diag');
+  if(score>=1 && score<=10){
+    let mensaje="", color="", bg="";
+    if(score>=8){ mensaje="Nivel avanzado. Ya dominas lo básico — juega con combinaciones de sabor y técnicas nuevas."; color="var(--ok)"; bg="rgba(138,154,91,.12)"; }
+    else if(score>=5){ mensaje="Nivel intermedio. Refuerza tus técnicas base y empieza a improvisar con lo que tengas en la despensa."; color="var(--warn)"; bg="rgba(216,162,74,.12)"; }
+    else{ mensaje="Nivel inicial. Empieza por técnicas base y mise en place antes de complicarte con recetas largas."; color="var(--danger)"; bg="rgba(193,68,14,.12)"; }
+    box.style.background=bg; box.style.borderColor=color;
+    box.innerHTML = `<h3 style="color:${color}; margin:0; font-size:15.5px; font-family:'Work Sans',sans-serif;">${mensaje}</h3><p style="margin-top:10px; color:var(--muted); font-size:12.5px;">Sugerencia: revisa el módulo de Técnicas base.</p>`;
+    box.classList.add('activo');
+  }
+}
+
+function mostrarTipCompleto(){ abrirModal("Tip del día", `<div style="padding:22px; font-size:17px; text-align:center; border:1px solid var(--flame); border-radius:10px; line-height:1.55;">${tipsDiarios[diaSemana]}</div>`); }
+function mostrarTecnicaCompleta(){ const t = tecnicasDiario[diaSemana]; abrirModal("Técnica del día", `<div style="text-align:left;"><h2 style="color:var(--flame); border:none; padding:0; margin-bottom:12px; font-size:22px;">${t.termino}</h2><p style="font-size:15px; line-height:1.6;">${t.definicion}</p></div>`); }
+</script>
+</body>
+</html>
